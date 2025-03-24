@@ -16,10 +16,10 @@ public class ServerThread extends Thread {
     private Socket client; // communication directly to "my" client
     private boolean isRunning = false; // control variable to stop this thread
     private ObjectOutputStream out; // exposed here for send()
-    private Server server;// ref to our server so we can call methods on it
-    // more easily
+
     private long clientId;
     private Consumer<ServerThread> onInitializationComplete; // callback to inform when this object is ready
+    private Room currentRoom;
 
     /**
      * A wrapper method so we don't need to keep typing out the long/complex sysout
@@ -48,14 +48,12 @@ public class ServerThread extends Thread {
      * @param onInitializationComplete method to inform listener that this object is
      *                                 ready
      */
-    protected ServerThread(Socket myClient, Server server, Consumer<ServerThread> onInitializationComplete) {
+    protected ServerThread(Socket myClient, Consumer<ServerThread> onInitializationComplete) {
         Objects.requireNonNull(myClient, "Client socket cannot be null");
-        Objects.requireNonNull(server, "Server cannot be null");
         Objects.requireNonNull(onInitializationComplete, "callback cannot be null");
         info("ServerThread created");
         // get communication channels to single client
         this.client = myClient;
-        this.server = server; // In the future we'll have a different way to reference the Server
         this.clientId = this.threadId(); // An id associated with the thread instance, used as a temporary identifier
         this.onInitializationComplete = onInitializationComplete;
 
@@ -65,6 +63,31 @@ public class ServerThread extends Thread {
         // Note: We return clientId instead of threadId as we'll change this identifier
         // in the future
         return this.clientId;
+    }
+
+    /**
+     * Returns the current Room associated with this ServerThread
+     * 
+     * @return
+     */
+    protected Room getCurrentRoom() {
+        return this.currentRoom;
+    }
+
+    /**
+     * Allows the setting of a non-null Room reference to this ServerThread
+     * 
+     * @param room
+     */
+    protected void setCurrentRoom(Room room) {
+        if (room == null) {
+            throw new NullPointerException("Room argument can't be null");
+        }
+        if (room == currentRoom) {
+            System.out.println(
+                    String.format("ServerThread set to the same room [%s], was this intentional?", room.getName()));
+        }
+        currentRoom = room;
     }
 
     /**
@@ -155,11 +178,11 @@ public class ServerThread extends Thread {
     }
 
     private void processPayload(String incoming) {
+        Objects.requireNonNull(currentRoom, "Can't process a payload when the current room is null");
         if (!processCommand(incoming)) {
             // if not command; send message to all clients via Server
-            server.handleMessage(this, incoming);
+            currentRoom.handleMessage(this, incoming);
         }
-
     }
 
     /**
@@ -170,6 +193,8 @@ public class ServerThread extends Thread {
      * @return true if it was a command, false otherwise
      */
     private boolean processCommand(String message) {
+        Objects.requireNonNull(currentRoom, "Can't process a command when the current room is null");
+
         boolean wasCommand = false; // control var to use as the return status
 
         // using "[cmd]" as a temporary trigger until we update how the data is passed
@@ -181,23 +206,40 @@ public class ServerThread extends Thread {
 
                 // index 0 is the trigger word
                 // index 1 is the command
-                final String command = commandData[1].trim();
+
+                // part 4 added the Command enum
+                final Command command = Command.stringToCommand(commandData[1].trim());
+
                 System.out.println(TextFX.colorize("Checking command: " + command, Color.YELLOW));
                 // index N are the data from the command
                 // Note: not all commands require data, some are simply actions/triggers to
                 // process like quit
                 switch (command) {
-                    case "quit":
-                    case "disconnect":
-                    case "logout":
-                    case "logoff":
-                        server.handleDisconnect(this);
+                    case Command.QUIT:
+                    case Command.DISCONNECT:
+                    case Command.LOGOUT:
+                    case Command.LOGOFF:
+                        currentRoom.handleDisconnect(this);
                         wasCommand = true;
                         break;
-                    case "reverse":
+                    case Command.REVERSE:
                         // ignore the first two indexes (trigger, command)
                         String relevantText = String.join(" ", Arrays.copyOfRange(commandData, 2, commandData.length));
-                        server.handleReverseText(this, relevantText);
+                        currentRoom.handleReverseText(this, relevantText);
+                        wasCommand = true;
+                        break;
+                    case Command.CREATE_ROOM:
+                        currentRoom.handleCreateRoom(this, commandData[2]);
+                        wasCommand = true;
+                        break;
+                    case Command.JOIN_ROOM:
+                        currentRoom.handleJoinRoom(this, commandData[2]);
+                        wasCommand = true;
+                        break;
+                    case Command.LEAVE_ROOM:
+                        // leaving simply joins the lobby since a ServerThread must always exist in a
+                        // Room
+                        currentRoom.handleJoinRoom(this, Room.LOBBY);
                         wasCommand = true;
                         break;
                     // added more cases/breaks as needed for other commands

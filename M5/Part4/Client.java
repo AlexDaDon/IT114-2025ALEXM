@@ -16,7 +16,8 @@ import M5.Part4.TextFX.Color;
  * Demoing bi-directional communication between client and server in a
  * multi-client scenario
  */
-public class Client {
+public enum Client {
+    INSTANCE;
 
     private Socket server = null;
     private ObjectOutputStream out = null;
@@ -26,7 +27,8 @@ public class Client {
     final Pattern localhostPattern = Pattern.compile("/connect\\s+(localhost:\\d{3,5})");
     private volatile boolean isRunning = true; // volatile for thread-safe visibility
 
-    public Client() {
+    // needs to be private now that the enum logic is handling this
+    private Client() {
         System.out.println("Client Created");
     }
 
@@ -112,13 +114,40 @@ public class Client {
             wasCommand = true;
         } else if ("/disconnect".equalsIgnoreCase(text)) {
             // index 0 = trigger, index 1 = command, index N = command data
-            String[] commandData = { Constants.COMMAND_TRIGGER, "disconnect" };
+            String[] commandData = { Constants.COMMAND_TRIGGER, Command.DISCONNECT.command };
             sendToServer(String.join(",", commandData));
             wasCommand = true;
         } else if (text.startsWith("/reverse")) {
             text = text.replace("/reverse", "").trim();
             // index 0 = trigger, index 1 = command, index N = command data
-            String[] commandData = { Constants.COMMAND_TRIGGER, "reverse", text };
+            String[] commandData = { Constants.COMMAND_TRIGGER, Command.REVERSE.command, text };
+            sendToServer(String.join(",", commandData));
+            wasCommand = true;
+        } else if (text.startsWith("/createroom")) {
+            text = text.replace("/createroom", "").trim();
+            if (text == null || text.length() == 0) {
+                System.out.println(TextFX.colorize("This command requires a room name as an argument", Color.RED));
+                return true;
+            }
+            // index 0 = trigger, index 1 = command, index N = command data
+            String[] commandData = { Constants.COMMAND_TRIGGER, Command.CREATE_ROOM.command, text };
+            sendToServer(String.join(",", commandData));
+            wasCommand = true;
+        } else if (text.startsWith("/joinroom")) {
+            text = text.replace("/joinroom", "").trim();
+            if (text == null || text.length() == 0) {
+                System.out.println(TextFX.colorize("This command requires a room name as an argument", Color.RED));
+                return true;
+            }
+            // index 0 = trigger, index 1 = command, index N = command data
+            String[] commandData = { Constants.COMMAND_TRIGGER, Command.JOIN_ROOM.command, text };
+            sendToServer(String.join(",", commandData));
+            wasCommand = true;
+        } else if (text.startsWith("/leave")) {
+            // Note: Accounts for /leave and /leaveroom variants (or anything beginning with
+            // /leave)
+            // index 0 = trigger, index 1 = command, index N = command data
+            String[] commandData = { Constants.COMMAND_TRIGGER, Command.LEAVE_ROOM.command };
             sendToServer(String.join(",", commandData));
             wasCommand = true;
         }
@@ -234,7 +263,7 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        Client client = new Client();
+        Client client = Client.INSTANCE;
         try {
             client.start();
         } catch (IOException e) {
