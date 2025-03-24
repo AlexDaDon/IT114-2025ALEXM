@@ -162,7 +162,7 @@ public class Room {
         // attempt to gracefully close and migrate clients
         if (!clientsInRoom.isEmpty()) {
             relay(null, "Room is shutting down, migrating to lobby");
-            info(String.format("migrating %s clients", name, clientsInRoom.size()));
+            info(String.format("migrating %s clients", clientsInRoom.size()));
             clientsInRoom.values().removeIf(client -> {
                 try {
                     Server.INSTANCE.joinRoom(Room.LOBBY, client);
@@ -176,7 +176,7 @@ public class Room {
         Server.INSTANCE.removeRoom(this);
         isRunning = false;
         clientsInRoom.clear();
-        info(String.format("closed", name));
+        info(String.format("closed"));
     }
 
     // start handle methods
