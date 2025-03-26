@@ -10,7 +10,9 @@ public enum Command {
     REVERSE("reverse"),
     CREATE_ROOM("createroom"),
     LEAVE_ROOM("leaveroom"),
-    JOIN_ROOM("joinroom");
+    JOIN_ROOM("joinroom"),
+    NAME("name"),
+    LIST_USERS("users");
 
     private static final HashMap<String, Command> BY_COMMAND = new HashMap<>();
     static {
