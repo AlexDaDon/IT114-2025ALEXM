@@ -3,8 +3,11 @@ package Project.Server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
+import Project.Common.LoggerUtil;
 import Project.Common.TextFX;
 import Project.Common.TextFX.Color;
 import Project.Exceptions.DuplicateRoomException;
@@ -13,6 +16,15 @@ import Project.Exceptions.RoomNotFoundException;
 public enum Server {
     INSTANCE; // Singleton instance
 
+    {
+        // statically initialize the server-side LoggerUtil
+        LoggerUtil.LoggerConfig config = new LoggerUtil.LoggerConfig();
+        config.setFileSizeLimit(2048 * 1024); // 2MB
+        config.setFileCount(1);
+        config.setLogLocation("server.log");
+        // Set the logger configuration
+        LoggerUtil.INSTANCE.setConfig(config);
+    }
     private int port = 3000;
     // connected clients
     // Use ConcurrentHashMap for thread-safe client management
@@ -137,6 +149,14 @@ public enum Server {
         }
         Room next = rooms.get(nameCheck);
         next.addClient(client);
+    }
+
+    protected List<String> listRooms(String roomQuery) {
+        final String nameCheck = roomQuery.toLowerCase();
+        return rooms.values().stream()
+                .filter(room -> room.getName().toLowerCase().contains(nameCheck))// find partially matched rooms
+                .map(room -> room.getName())// map room to String (name)
+                .collect(Collectors.toList()); // return a mutable list
     }
 
     protected void removeRoom(Room room) {

@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,9 +15,11 @@ import java.util.regex.Pattern;
 import Project.Common.Command;
 import Project.Common.ConnectionPayload;
 import Project.Common.Constants;
+import Project.Common.LoggerUtil;
 import Project.Common.Payload;
 import Project.Common.PayloadType;
 import Project.Common.RoomAction;
+import Project.Common.RoomResultPayload;
 import Project.Common.TextFX;
 import Project.Common.TextFX.Color;
 
@@ -27,6 +30,15 @@ import Project.Common.TextFX.Color;
 public enum Client {
     INSTANCE;
 
+    {
+        // statically initialize the client-side LoggerUtil
+        LoggerUtil.LoggerConfig config = new LoggerUtil.LoggerConfig();
+        config.setFileSizeLimit(2048 * 1024); // 2MB
+        config.setFileCount(1);
+        config.setLogLocation("client.log");
+        // Set the logger configuration
+        LoggerUtil.INSTANCE.setConfig(config);
+    }
     private Socket server = null;
     private ObjectOutputStream out = null;
     private ObjectInputStream in = null;
@@ -180,6 +192,11 @@ public enum Client {
                 // /leave)
                 sendRoomAction(text, RoomAction.LEAVE);
                 wasCommand = true;
+            } else if (text.startsWith(Command.LIST_ROOMS.command)) {
+                text = text.replace(Command.LIST_ROOMS.command, "").trim();
+
+                sendRoomAction(text, RoomAction.LIST);
+                wasCommand = true;
             }
         }
         return wasCommand;
@@ -206,6 +223,9 @@ public enum Client {
                 break;
             case RoomAction.LEAVE:
                 payload.setPayloadType(PayloadType.ROOM_LEAVE);
+                break;
+            case RoomAction.LIST:
+                payload.setPayloadType(PayloadType.ROOM_LIST);
                 break;
             default:
                 System.out.println(TextFX.colorize("Invalid room action", Color.RED));
@@ -342,6 +362,9 @@ public enum Client {
             case SYNC_CLIENT:
                 processRoomAction(payload);
                 break;
+            case ROOM_LIST:
+                processRoomsList(payload);
+                break;
             default:
                 System.out.println(TextFX.colorize("Unhandled payload type", Color.YELLOW));
                 break;
@@ -350,6 +373,24 @@ public enum Client {
     }
 
     // Start process*() methods
+    private void processRoomsList(Payload payload) {
+        if (!(payload instanceof RoomResultPayload)) {
+            error("Invalid payload subclass for processRoomsList");
+            return;
+        }
+        RoomResultPayload rrp = (RoomResultPayload) payload;
+        List<String> rooms = rrp.getRooms();
+        if (rooms == null || rooms.size() == 0) {
+            System.out.println(
+                    TextFX.colorize("No rooms found matching your query",
+                            Color.RED));
+            return;
+        }
+        System.out.println(TextFX.colorize("Room Results:", Color.PURPLE));
+        System.out.println(
+                String.join("\n", rooms));
+    }
+
     private void processClientData(Payload payload) {
         if (myUser.getClientId() != Constants.DEFAULT_CLIENT_ID) {
             System.out.println(TextFX.colorize("Client ID already set, this shouldn't happen", Color.YELLOW));
