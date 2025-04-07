@@ -23,6 +23,14 @@ public class ServerUser extends User {
 
     // add any wrapper methods to call on the ServerThread
     // don't used the exposed full ServerThread object
+    public boolean sendTurnStatus(long clientId, boolean didTakeTurn) {
+        return sendTurnStatus(clientId, didTakeTurn, false);
+    }
+
+    public boolean sendTurnStatus(long clientId, boolean didTakeTurn, boolean quiet) {
+        return client.sendTurnStatus(clientId, didTakeTurn, quiet);
+    }
+
     public boolean sendReadyStatus(long clientId, boolean isReady, boolean quiet) {
         return client.sendReadyStatus(clientId, isReady, quiet);
     }

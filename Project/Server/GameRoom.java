@@ -1,8 +1,11 @@
 package Project.Server;
 
+import Project.Common.Constants;
 import Project.Common.LoggerUtil;
 import Project.Common.Phase;
 import Project.Common.TimedEvent;
+import Project.Exceptions.PhaseMismatchException;
+import Project.Exceptions.PlayerNotFoundException;
 
 public class GameRoom extends BaseGameRoom {
 
@@ -22,6 +25,7 @@ public class GameRoom extends BaseGameRoom {
         // sync GameRoom state to new client
         syncCurrentPhase(sp);
         syncReadyStatus(sp);
+        syncTurnStatus(sp);
     }
 
     /** {@inheritDoc} */
@@ -127,10 +131,80 @@ public class GameRoom extends BaseGameRoom {
     // end lifecycle methods
 
     // send/sync data to ServerUser(s)
+    private void sendTurnStatus(ServerUser client, boolean tookTurn) {
+        playersInRoom.values().removeIf(spInRoom -> {
+            boolean failedToSend = !spInRoom.sendTurnStatus(client.getClientId(), client.didTakeTurn());
+            if (failedToSend) {
+                removeClient(spInRoom.getServerThread());
+            }
+            return failedToSend;
+        });
+    }
+
+    private void syncTurnStatus(ServerUser incomingClient) {
+        playersInRoom.values().forEach(serverUser -> {
+            if (serverUser.getClientId() != incomingClient.getClientId()) {
+                boolean failedToSync = !incomingClient.sendTurnStatus(serverUser.getClientId(),
+                        serverUser.didTakeTurn(), true);
+                if (failedToSync) {
+                    LoggerUtil.INSTANCE.warning(
+                            String.format("Removing disconnected %s from list", serverUser.getDisplayName()));
+                    disconnect(serverUser.getServerThread());
+                }
+            }
+        });
+    }
 
     // end send data to ServerUser(s)
 
+    // misc methods
+
+    private void checkAllTookTurn() {
+        int numReady = playersInRoom.values().stream()
+                .filter(sp -> sp.isReady())
+                .toList().size();
+        int numTookTurn = playersInRoom.values().stream()
+                // ensure to verify the isReady part since it's against the original list
+                .filter(sp -> sp.isReady() && sp.didTakeTurn())
+                .toList().size();
+        if (numReady == numTookTurn) {
+            relay(null,
+                    String.format("All players have taken their turn (%d/%d) ending the round", numTookTurn, numReady));
+            onRoundEnd();
+        }
+    }
+
     // receive data from ServerThread (GameRoom specific)
+
+    /**
+     * Example turn action
+     * 
+     * @param client
+     */
+    protected void handleTurnAction(ServerThread client, String exampleText) {
+        // check if the client is in the room
+        try {
+            checkPlayerInRoom(client);
+            checkCurrentPhase(client, Phase.IN_PROGRESS);
+            ServerUser currentUser = playersInRoom.get(client.getClientId());
+            if (currentUser.didTakeTurn()) {
+                client.sendMessage(Constants.DEFAULT_CLIENT_ID, "You have already taken your turn this round");
+                return;
+            }
+            currentUser.setTookTurn(true);
+            // TODO handle example text possibly or other turn related intention from client
+            sendTurnStatus(currentUser, currentUser.didTakeTurn());
+            checkAllTookTurn();
+        } catch (PlayerNotFoundException e) {
+            client.sendMessage(Constants.DEFAULT_CLIENT_ID, "You must be in a GameRoom to do the ready check");
+            LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);
+        } catch (PhaseMismatchException e) {
+            client.sendMessage(Constants.DEFAULT_CLIENT_ID, "You can only take a turn during the IN_PROGRESS phase");
+            LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);
+        } catch (Exception e) {
+            LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);
+        }
+    }
 
     // end receive data from ServerThread (GameRoom specific)
 }
