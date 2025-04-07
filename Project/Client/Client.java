@@ -18,9 +18,12 @@ import Project.Common.Constants;
 import Project.Common.LoggerUtil;
 import Project.Common.Payload;
 import Project.Common.PayloadType;
+import Project.Common.Phase;
+import Project.Common.ReadyPayload;
 import Project.Common.RoomAction;
 import Project.Common.RoomResultPayload;
 import Project.Common.TextFX;
+import Project.Common.User;
 import Project.Common.TextFX.Color;
 
 /**
@@ -48,6 +51,7 @@ public enum Client {
     private volatile boolean isRunning = true; // volatile for thread-safe visibility
     private final ConcurrentHashMap<Long, User> knownClients = new ConcurrentHashMap<Long, User>();
     private User myUser = new User();
+    private Phase currentPhase = Phase.READY;
 
     private void error(String message) {
         System.out.println(TextFX.colorize(String.format("%s", message), Color.RED));
@@ -197,12 +201,26 @@ public enum Client {
 
                 sendRoomAction(text, RoomAction.LIST);
                 wasCommand = true;
+            } else if (text.equalsIgnoreCase(Command.READY.command)) {
+                sendReady();
+                wasCommand = true;
             }
         }
         return wasCommand;
     }
 
     // Start Send*() methods
+    /**
+     * Sends the client's intent to be ready.
+     * Can also be used to toggle the ready state if coded on the server-side
+     * 
+     * @throws IOException
+     */
+    private void sendReady() throws IOException {
+        ReadyPayload rp = new ReadyPayload();
+        rp.setReady(true); // <- techically not needed as we'll use the payload type as a trigger
+        sendToServer(rp);
+    }
 
     /**
      * Sends a room action to the server
@@ -365,6 +383,19 @@ public enum Client {
             case ROOM_LIST:
                 processRoomsList(payload);
                 break;
+            case PayloadType.READY:
+                processReadyStatus(payload, false);
+                break;
+            case PayloadType.SYNC_READY:
+                processReadyStatus(payload, true);
+                break;
+            case PayloadType.RESET_READY:
+                // note no data necessary as this is just a trigger
+                processResetReady();
+                break;
+            case PayloadType.PHASE:
+                processPhase(payload);
+                break;
             default:
                 System.out.println(TextFX.colorize("Unhandled payload type", Color.YELLOW));
                 break;
@@ -373,6 +404,36 @@ public enum Client {
     }
 
     // Start process*() methods
+    private void processPhase(Payload payload) {
+        currentPhase = Enum.valueOf(Phase.class, payload.getMessage());
+        System.out.println(TextFX.colorize("Current phase is " + currentPhase.name(), Color.YELLOW));
+    }
+
+    private void processResetReady() {
+        knownClients.values().forEach(cp -> cp.setReady(false));
+        System.out.println("Ready status reset for everyone");
+    }
+
+    private void processReadyStatus(Payload payload, boolean isQuiet) {
+        if (!(payload instanceof ReadyPayload)) {
+            error("Invalid payload subclass for processRoomsList");
+            return;
+        }
+        ReadyPayload rp = (ReadyPayload) payload;
+        if (!knownClients.containsKey(rp.getClientId())) {
+            LoggerUtil.INSTANCE.severe(String.format("Received ready status [%s] for client id %s who is not known",
+                    rp.isReady() ? "ready" : "not ready", rp.getClientId()));
+            return;
+        }
+        User cp = knownClients.get(rp.getClientId());
+        cp.setReady(rp.isReady());
+        if (!isQuiet) {
+            System.out.println(
+                    String.format("%s[%s] is %s", cp.getClientName(), cp.getClientId(),
+                            rp.isReady() ? "ready" : "not ready"));
+        }
+    }
+
     private void processRoomsList(Payload payload) {
         if (!(payload instanceof RoomResultPayload)) {
             error("Invalid payload subclass for processRoomsList");
