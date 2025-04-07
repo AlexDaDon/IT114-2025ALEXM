@@ -6,6 +6,8 @@ import Project.Common.Constants;
 import Project.Common.LoggerUtil;
 import Project.Common.Phase;
 import Project.Common.TimedEvent;
+import Project.Exceptions.PhaseMismatchException;
+import Project.Exceptions.PlayerNotFoundException;
 
 /**
  * No edits should be needed in this file, this prepares the core logic for the
@@ -288,7 +290,7 @@ public abstract class BaseGameRoom extends Room {
         if (currentPhase != check) {
             client.sendMessage(Constants.DEFAULT_CLIENT_ID,
                     String.format("Current phase is %s, please try again later", currentPhase.name()));
-            throw new Exception("Invalid Phase");
+            throw new PhaseMismatchException("Invalid Phase");
         }
     }
 
@@ -301,7 +303,7 @@ public abstract class BaseGameRoom extends Room {
     protected void checkPlayerInRoom(ServerThread client) throws Exception {
         if (!playersInRoom.containsKey(client.getClientId())) {
             LoggerUtil.INSTANCE.severe("Player isn't in room");
-            throw new Exception("Player isn't in room");
+            throw new PlayerNotFoundException("Player isn't in room");
         }
     }
     // end Logic Checks
