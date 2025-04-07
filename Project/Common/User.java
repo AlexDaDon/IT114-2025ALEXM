@@ -50,6 +50,7 @@ public class User {
         this.clientId = Constants.DEFAULT_CLIENT_ID;
         this.clientName = null;
         this.isReady = false;
+        this.tookTurn = false;
     }
 
     /**
