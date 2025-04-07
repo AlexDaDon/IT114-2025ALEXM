@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 
 import Project.Common.ConnectionPayload;
 import Project.Common.Constants;
+import Project.Common.LoggerUtil;
 import Project.Common.Payload;
 import Project.Common.PayloadType;
 import Project.Common.Phase;
@@ -29,7 +30,8 @@ public class ServerThread extends BaseServerThread {
      * @param message
      */
     protected void info(String message) {
-        System.out.println(TextFX.colorize(String.format("Thread[%s]: %s", this.getClientId(), message), Color.CYAN));
+        LoggerUtil.INSTANCE
+                .info(TextFX.colorize(String.format("Thread[%s]: %s", this.getClientId(), message), Color.CYAN));
     }
 
     /**
@@ -207,7 +209,7 @@ public class ServerThread extends BaseServerThread {
                 currentRoom.handleListRooms(this, incoming.getMessage());
                 break;
             default:
-                System.out.println(TextFX.colorize("Unknown payload type received", Color.RED));
+                LoggerUtil.INSTANCE.warning(TextFX.colorize("Unknown payload type received", Color.RED));
                 break;
         }
     }

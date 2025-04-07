@@ -34,7 +34,7 @@ public enum Server {
     private long nextClientId = 0;
 
     private void info(String message) {
-        System.out.println(TextFX.colorize(String.format("Server: %s", message), Color.YELLOW));
+        LoggerUtil.INSTANCE.info(TextFX.colorize(String.format("Server: %s", message), Color.YELLOW));
     }
 
     private Server() {
@@ -81,9 +81,9 @@ public enum Server {
                 // Note: We don't yet add the ServerThread reference to our connectedClients map
             }
         } catch (DuplicateRoomException e) {
-            System.err.println(TextFX.colorize("Lobby already exists (this shouldn't happen)", Color.RED));
+            LoggerUtil.INSTANCE.severe(TextFX.colorize("Lobby already exists (this shouldn't happen)", Color.RED));
         } catch (IOException e) {
-            System.err.println(TextFX.colorize("Error accepting connection", Color.RED));
+            LoggerUtil.INSTANCE.severe(TextFX.colorize("Error accepting connection", Color.RED));
             e.printStackTrace();
         } finally {
             info("Closing server socket");
@@ -206,7 +206,7 @@ public enum Server {
     }
 
     public static void main(String[] args) {
-        System.out.println("Server Starting");
+        LoggerUtil.INSTANCE.info("Server Starting");
         Server server = Server.INSTANCE;
         int port = 3000;
         try {
@@ -216,7 +216,7 @@ public enum Server {
             // will default to the defined value prior to the try/catch
         }
         server.start(port);
-        System.out.println("Server Stopped");
+        LoggerUtil.INSTANCE.warning("Server Stopped");
     }
 
 }
