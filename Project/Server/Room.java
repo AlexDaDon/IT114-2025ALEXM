@@ -90,11 +90,12 @@ public class Room implements AutoCloseable {
                     client.getClientId() == serverThread.getClientId() ? "You"
                             : client.getDisplayName(),
                     didJoin ? "joined" : "left");
+            final long senderId = client == null ? Constants.DEFAULT_CLIENT_ID : client.getClientId();
             // Share info of the client joining or leaving the room
             boolean failedToSync = !serverThread.sendClientInfo(client.getClientId(),
                     client.getClientName(), didJoin ? RoomAction.JOIN : RoomAction.LEAVE);
             // Send the server generated message to the current client
-            boolean failedToSend = !serverThread.sendMessage(client.getClientId(), formattedMessage);
+            boolean failedToSend = !serverThread.sendMessage(senderId, formattedMessage);
             if (failedToSend || failedToSync) {
                 LoggerUtil.INSTANCE.warning(
                         String.format("Removing disconnected %s from list", serverThread.getDisplayName()));
@@ -123,8 +124,9 @@ public class Room implements AutoCloseable {
         }
 
         // Note: any desired changes to the message must be done before this line
-        String senderString = sender == null ? String.format("Room[%s]", getName())
+        final String senderString = sender == null ? String.format("Room[%s]", getName())
                 : sender.getDisplayName();
+        final long senderId = sender == null ? Constants.DEFAULT_CLIENT_ID : sender.getClientId();
         // Note: formattedMessage must be final (or effectively final) since outside
         // scope can't be changed inside a callback function (see removeIf() below)
         final String formattedMessage = String.format("%s: %s", senderString, message);
@@ -136,7 +138,7 @@ public class Room implements AutoCloseable {
         info(String.format("sending message to %s recipients: %s", clientsInRoom.size(), formattedMessage));
 
         clientsInRoom.values().removeIf(serverThread -> {
-            boolean failedToSend = !serverThread.sendMessage(sender.getClientId(), formattedMessage);
+            boolean failedToSend = !serverThread.sendMessage(senderId, formattedMessage);
             if (failedToSend) {
                 LoggerUtil.INSTANCE.warning(
                         String.format("Removing disconnected %s from list", serverThread.getDisplayName()));

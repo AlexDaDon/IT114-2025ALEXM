@@ -151,7 +151,8 @@ public enum Client {
             } else if (text.startsWith(Command.NAME.command)) {
                 text = text.replace(Command.NAME.command, "").trim();
                 if (text == null || text.length() == 0) {
-                    LoggerUtil.INSTANCE.warning(TextFX.colorize("This command requires a name as an argument", Color.RED));
+                    LoggerUtil.INSTANCE
+                            .warning(TextFX.colorize("This command requires a name as an argument", Color.RED));
                     return true;
                 }
                 myUser.setClientName(text);// temporary until we get a response from the server
@@ -159,11 +160,14 @@ public enum Client {
                         Color.YELLOW));
                 wasCommand = true;
             } else if (text.equalsIgnoreCase(Command.LIST_USERS.command)) {
+                String message = TextFX.colorize("Known clients:\n", Color.CYAN);
                 LoggerUtil.INSTANCE.info(TextFX.colorize("Known clients:", Color.CYAN));
-                knownClients.forEach((key, value) -> {
-                    LoggerUtil.INSTANCE.info(TextFX.colorize(String.format("%s%s", value.getDisplayName(),
-                            key == myUser.getClientId() ? " (you)" : ""), Color.CYAN));
-                });
+                message += String.join("\n", knownClients.values().stream()
+                        .map(c -> String.format("%s(%s)%s %s", c.getClientName(), c.getClientId(),
+                                c.getClientId() == myUser.getClientId() ? " (you)" : "",
+                                c.isReady() ? "[x]" : "[ ]"))
+                        .toList());
+                LoggerUtil.INSTANCE.info(message);
                 wasCommand = true;
             } else if (Command.QUIT.command.equalsIgnoreCase(text)) {
                 close();
@@ -178,7 +182,8 @@ public enum Client {
             } else if (text.startsWith(Command.CREATE_ROOM.command)) {
                 text = text.replace(Command.CREATE_ROOM.command, "").trim();
                 if (text == null || text.length() == 0) {
-                    LoggerUtil.INSTANCE.warning(TextFX.colorize("This command requires a room name as an argument", Color.RED));
+                    LoggerUtil.INSTANCE
+                            .warning(TextFX.colorize("This command requires a room name as an argument", Color.RED));
                     return true;
                 }
                 sendRoomAction(text, RoomAction.CREATE);
@@ -186,7 +191,8 @@ public enum Client {
             } else if (text.startsWith(Command.JOIN_ROOM.command)) {
                 text = text.replace(Command.JOIN_ROOM.command, "").trim();
                 if (text == null || text.length() == 0) {
-                    LoggerUtil.INSTANCE.warning(TextFX.colorize("This command requires a room name as an argument", Color.RED));
+                    LoggerUtil.INSTANCE
+                            .warning(TextFX.colorize("This command requires a room name as an argument", Color.RED));
                     return true;
                 }
                 sendRoomAction(text, RoomAction.JOIN);
@@ -246,7 +252,7 @@ public enum Client {
                 payload.setPayloadType(PayloadType.ROOM_LIST);
                 break;
             default:
-            LoggerUtil.INSTANCE.warning(TextFX.colorize("Invalid room action", Color.RED));
+                LoggerUtil.INSTANCE.warning(TextFX.colorize("Invalid room action", Color.RED));
                 break;
         }
         sendToServer(payload);
@@ -340,8 +346,8 @@ public enum Client {
                 }
             }
         } catch (ClassCastException | ClassNotFoundException cce) {
-            LoggerUtil.INSTANCE.severe("Error reading object as specified type:",cce);
-            //cce.printStackTrace();
+            LoggerUtil.INSTANCE.severe("Error reading object as specified type:", cce);
+            // cce.printStackTrace();
         } catch (IOException e) {
             if (isRunning) {
                 LoggerUtil.INSTANCE.warning("Connection dropped");
@@ -397,7 +403,7 @@ public enum Client {
                 processPhase(payload);
                 break;
             default:
-            LoggerUtil.INSTANCE.warning(TextFX.colorize("Unhandled payload type", Color.YELLOW));
+                LoggerUtil.INSTANCE.warning(TextFX.colorize("Unhandled payload type", Color.YELLOW));
                 break;
 
         }
@@ -471,8 +477,9 @@ public enum Client {
         } else if (knownClients.containsKey(payload.getClientId())) {
             User disconnectedUser = knownClients.remove(payload.getClientId());
             if (disconnectedUser != null) {
-                LoggerUtil.INSTANCE.info(TextFX.colorize(String.format("%s disconnected", disconnectedUser.getDisplayName()),
-                        Color.RED));
+                LoggerUtil.INSTANCE
+                        .info(TextFX.colorize(String.format("%s disconnected", disconnectedUser.getDisplayName()),
+                                Color.RED));
             }
         }
 
@@ -544,8 +551,8 @@ public enum Client {
                 }
             }
         } catch (IOException ioException) {
-            LoggerUtil.INSTANCE.severe("Error in listentToInput()",ioException);
-            //ioException.printStackTrace();
+            LoggerUtil.INSTANCE.severe("Error in listentToInput()", ioException);
+            // ioException.printStackTrace();
         }
         LoggerUtil.INSTANCE.info("listenToInput thread stopped");
     }
@@ -588,7 +595,7 @@ public enum Client {
             }
         } catch (IOException e) {
             e.printStackTrace();
-            //LoggerUtil.INSTANCE.severe("Socket Error", e);
+            // LoggerUtil.INSTANCE.severe("Socket Error", e);
         }
     }
 
