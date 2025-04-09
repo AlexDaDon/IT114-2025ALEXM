@@ -84,6 +84,7 @@ public class GameRoom extends BaseGameRoom {
     protected void onRoundStart() {
         LoggerUtil.INSTANCE.info("onRoundStart() start");
         resetRoundTimer();
+        sendResetTurnStatus();
         startRoundTimer();
         LoggerUtil.INSTANCE.info("onRoundStart() end");
     }
