@@ -223,6 +223,15 @@ public class ServerThread extends BaseServerThread {
         }
     }
 
+    // limited user data exposer
+    protected boolean isReady() {
+        return this.user.isReady();
+    }
+
+    protected void setReady(boolean isReady) {
+        this.user.setReady(isReady);
+    }
+
     @Override
     protected void onInitialized() {
         // once receiving the desired client name the object is ready

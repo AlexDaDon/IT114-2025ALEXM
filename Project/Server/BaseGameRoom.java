@@ -1,7 +1,5 @@
 package Project.Server;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 import Project.Common.Constants;
 import Project.Common.LoggerUtil;
 import Project.Common.Phase;
@@ -14,11 +12,6 @@ import Project.Exceptions.PlayerNotFoundException;
  * GameRoom
  */
 public abstract class BaseGameRoom extends Room {
-    // although there will be data duplication, I chose to have a separate hashmap
-    // for ServerUsers
-    // this makes it easier to utilize concepts across all project types and not
-    // impact chatroom projects
-    protected ConcurrentHashMap<Long, ServerUser> playersInRoom = new ConcurrentHashMap<Long, ServerUser>();
 
     private TimedEvent readyTimer = null;
 
@@ -69,7 +62,7 @@ public abstract class BaseGameRoom extends Room {
      * 
      * @param client the client who joined
      */
-    protected abstract void onClientAdded(ServerUser client);
+    protected abstract void onClientAdded(ServerThread client);
 
     /**
      * Triggered when a client is removed from the base-Room map and the GameRoom
@@ -78,7 +71,7 @@ public abstract class BaseGameRoom extends Room {
      * @param client the client who was removed (can be null if removal already
      *               occurred)
      */
-    protected abstract void onClientRemoved(ServerUser client);
+    protected abstract void onClientRemoved(ServerThread client);
 
     @Override
     protected synchronized void addClient(ServerThread client) {
@@ -88,14 +81,14 @@ public abstract class BaseGameRoom extends Room {
         // do the base Room class logic
         super.addClient(client);
 
-        if (playersInRoom.containsKey(client.getClientId())) {
+        if (clientsInRoom.containsKey(client.getClientId())) {
 
             return;
         }
-        // create a ServerUser wrapper and track it in this subclass
-        ServerUser sp = new ServerUser(client);
-        playersInRoom.put(client.getClientId(), sp);
-        onClientAdded(sp);
+        // create a ServerThread wrapper and track it in this subclass
+
+        clientsInRoom.put(client.getClientId(), client);
+        onClientAdded(client);
     }
 
     @Override
@@ -103,9 +96,9 @@ public abstract class BaseGameRoom extends Room {
         if (!isRunning()) { // block action if Room isn't running
             return;
         }
-        // remove client (ServerUser)
-        ServerUser sp = playersInRoom.remove(client.getClientId());
-        LoggerUtil.INSTANCE.info("Players in room: " + playersInRoom.size());
+        // remove client (ServerThread)
+        ServerThread sp = clientsInRoom.remove(client.getClientId());
+        LoggerUtil.INSTANCE.info("Players in room: " + clientsInRoom.size());
         // do the base-class logic
         super.removeClient(client);
         onClientRemoved(sp);
@@ -114,8 +107,8 @@ public abstract class BaseGameRoom extends Room {
     @Override
     protected synchronized void disconnect(ServerThread client) {
         super.disconnect(client);
-        ServerUser sp = playersInRoom.remove(client.getClientId());
-        LoggerUtil.INSTANCE.info("Players in room: " + playersInRoom.size());
+        ServerThread sp = clientsInRoom.remove(client.getClientId());
+        LoggerUtil.INSTANCE.info("Players in room: " + clientsInRoom.size());
         onClientRemoved(sp);
     }
 
@@ -152,7 +145,7 @@ public abstract class BaseGameRoom extends Room {
      * and ready
      */
     private void checkReadyStatus() {
-        long numReady = playersInRoom.values().stream().filter(p -> p.isReady()).count();
+        long numReady = clientsInRoom.values().stream().filter(p -> p.isReady()).count();
         if (numReady >= MINIMUM_REQUIRED_TO_START) {
             resetReadyTimer();
             onSessionStart();
@@ -162,7 +155,7 @@ public abstract class BaseGameRoom extends Room {
     }
 
     protected void resetReadyStatus() {
-        playersInRoom.values().forEach(p -> p.setReady(false));
+        clientsInRoom.values().forEach(p -> p.setReady(false));
         sendResetReadyTrigger();
     }
 
@@ -179,14 +172,14 @@ public abstract class BaseGameRoom extends Room {
         }
     }
 
-    // send/sync data to ServerUser(s)
+    // send/sync data to ServerThread(s)
 
     /**
      * Syncs the current phase to a single client
      * 
      * @param sp
      */
-    protected void syncCurrentPhase(ServerUser sp) {
+    protected void syncCurrentPhase(ServerThread sp) {
         sp.sendCurrentPhase(currentPhase);
     }
 
@@ -194,10 +187,10 @@ public abstract class BaseGameRoom extends Room {
      * Sends the current phase to all clients
      */
     protected void sendCurrentPhase() {
-        playersInRoom.values().removeIf(spInRoom -> {
+        clientsInRoom.values().removeIf(spInRoom -> {
             boolean failedToSend = !spInRoom.sendCurrentPhase(currentPhase);
             if (failedToSend) {
-                removeClient(spInRoom.getServerThread());
+                removeClient(spInRoom);
             }
             return failedToSend;
         });
@@ -208,46 +201,46 @@ public abstract class BaseGameRoom extends Room {
      * status
      */
     protected void sendResetReadyTrigger() {
-        playersInRoom.values().removeIf(spInRoom -> {
+        clientsInRoom.values().removeIf(spInRoom -> {
             boolean failedToSend = !spInRoom.sendResetReady();
             if (failedToSend) {
-                removeClient(spInRoom.getServerThread());
+                removeClient(spInRoom);
             }
             return failedToSend;
         });
     }
 
     /**
-     * Sends the ready status of each ServerUser to one client
+     * Sends the ready status of each ServerThread to one client
      * 
      * @param incomingSP
      */
-    protected void syncReadyStatus(ServerUser incomingSP) {
-        playersInRoom.values().removeIf(spInRoom -> {
+    protected void syncReadyStatus(ServerThread incomingSP) {
+        clientsInRoom.values().removeIf(spInRoom -> {
             boolean failedToSend = !incomingSP.sendReadyStatus(spInRoom.getClientId(), spInRoom.isReady(), true);
             if (failedToSend) {
-                removeClient(spInRoom.getServerThread());
+                removeClient(spInRoom);
             }
             return failedToSend && spInRoom.getClientId() == incomingSP.getClientId();
         });
     }
 
     /**
-     * Sends the ready status of one ServerUser to all clients
+     * Sends the ready status of one ServerThread to all clients
      * 
      * @param incomingSP
      * @param isReady
      */
-    protected void sendReadyStatus(ServerUser incomingSP, boolean isReady) {
-        playersInRoom.values().removeIf(spInRoom -> {
+    protected void sendReadyStatus(ServerThread incomingSP, boolean isReady) {
+        clientsInRoom.values().removeIf(spInRoom -> {
             boolean failedToSend = !spInRoom.sendReadyStatus(incomingSP.getClientId(), incomingSP.isReady());
             if (failedToSend) {
-                removeClient(spInRoom.getServerThread());
+                removeClient(spInRoom);
             }
             return failedToSend;
         });
     }
-    // end send data to ServerUser(s)
+    // end send data to ServerThread(s)
 
     // receive data from ServerThread (GameRoom specific)
     protected void handleReady(ServerThread sender) {
@@ -256,15 +249,15 @@ public abstract class BaseGameRoom extends Room {
             checkPlayerInRoom(sender);
             checkCurrentPhase(sender, Phase.READY);
 
-            ServerUser sp = null;
+            ServerThread sp = null;
             // option 1: simply just mark ready
             if (!allowToggleReady) {
-                sp = playersInRoom.get(sender.getClientId());
+                sp = clientsInRoom.get(sender.getClientId());
                 sp.setReady(true);
             }
             // option 2: toggle
             else {
-                sp = playersInRoom.get(sender.getClientId());
+                sp = clientsInRoom.get(sender.getClientId());
                 sp.setReady(!sp.isReady());
             }
             startReadyTimer(false); // <-- triggers the next step when it expires
@@ -301,7 +294,7 @@ public abstract class BaseGameRoom extends Room {
      * @throws Exception
      */
     protected void checkPlayerInRoom(ServerThread client) throws Exception {
-        if (!playersInRoom.containsKey(client.getClientId())) {
+        if (!clientsInRoom.containsKey(client.getClientId())) {
             LoggerUtil.INSTANCE.severe("Player isn't in room");
             throw new PlayerNotFoundException("Player isn't in room");
         }

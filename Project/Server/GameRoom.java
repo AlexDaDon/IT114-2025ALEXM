@@ -18,7 +18,7 @@ public class GameRoom extends BaseGameRoom {
 
     /** {@inheritDoc} */
     @Override
-    protected void onClientAdded(ServerUser sp) {
+    protected void onClientAdded(ServerThread sp) {
         // sync GameRoom state to new client
         syncCurrentPhase(sp);
         syncReadyStatus(sp);
@@ -26,11 +26,11 @@ public class GameRoom extends BaseGameRoom {
 
     /** {@inheritDoc} */
     @Override
-    protected void onClientRemoved(ServerUser sp) {
+    protected void onClientRemoved(ServerThread sp) {
         // added after Summer 2024 Demo
         // Stops the timers so room can clean up
-        LoggerUtil.INSTANCE.info("Player Removed, remaining: " + playersInRoom.size());
-        if (playersInRoom.isEmpty()) {
+        LoggerUtil.INSTANCE.info("Player Removed, remaining: " + clientsInRoom.size());
+        if (clientsInRoom.isEmpty()) {
             resetReadyTimer();
             resetTurnTimer();
             resetRoundTimer();
@@ -126,9 +126,9 @@ public class GameRoom extends BaseGameRoom {
     }
     // end lifecycle methods
 
-    // send/sync data to ServerUser(s)
+    // send/sync data to ServerThread(s)
 
-    // end send data to ServerUser(s)
+    // end send data to ServerThread(s)
 
     // receive data from ServerThread (GameRoom specific)
 
