@@ -9,6 +9,7 @@ public class ServerUser extends User {
     public ServerUser(ServerThread client) {
         this.client = client;
         setClientId(client.getClientId());
+        setClientName(client.getClientName());
     }
 
     /**
