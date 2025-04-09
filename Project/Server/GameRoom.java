@@ -84,6 +84,8 @@ public class GameRoom extends BaseGameRoom {
     protected void onRoundStart() {
         LoggerUtil.INSTANCE.info("onRoundStart() start");
         resetRoundTimer();
+        resetTurnStatus();
+        sendResetTurnStatus();
         startRoundTimer();
         LoggerUtil.INSTANCE.info("onRoundStart() end");
     }
@@ -131,6 +133,15 @@ public class GameRoom extends BaseGameRoom {
     // end lifecycle methods
 
     // send/sync data to ServerUser(s)
+    private void sendResetTurnStatus() {
+        clientsInRoom.values().forEach(spInRoom -> {
+            boolean failedToSend = !spInRoom.sendResetTurnStatus();
+            if (failedToSend) {
+                removeClient(spInRoom);
+            }
+        });
+    }
+
     private void sendTurnStatus(ServerThread client, boolean tookTurn) {
         clientsInRoom.values().removeIf(spInRoom -> {
             boolean failedToSend = !spInRoom.sendTurnStatus(client.getClientId(), client.didTakeTurn());
@@ -158,6 +169,12 @@ public class GameRoom extends BaseGameRoom {
     // end send data to ServerThread(s)
 
     // misc methods
+    private void resetTurnStatus() {
+        clientsInRoom.values().forEach(sp -> {
+            sp.setTookTurn(false);
+        });
+
+    }
 
     private void checkAllTookTurn() {
         int numReady = clientsInRoom.values().stream()
