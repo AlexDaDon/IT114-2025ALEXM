@@ -21,7 +21,7 @@ public class GameRoom extends BaseGameRoom {
 
     /** {@inheritDoc} */
     @Override
-    protected void onClientAdded(ServerUser sp) {
+    protected void onClientAdded(ServerThread sp) {
         // sync GameRoom state to new client
         syncCurrentPhase(sp);
         syncReadyStatus(sp);
@@ -30,11 +30,11 @@ public class GameRoom extends BaseGameRoom {
 
     /** {@inheritDoc} */
     @Override
-    protected void onClientRemoved(ServerUser sp) {
+    protected void onClientRemoved(ServerThread sp) {
         // added after Summer 2024 Demo
         // Stops the timers so room can clean up
-        LoggerUtil.INSTANCE.info("Player Removed, remaining: " + playersInRoom.size());
-        if (playersInRoom.isEmpty()) {
+        LoggerUtil.INSTANCE.info("Player Removed, remaining: " + clientsInRoom.size());
+        if (clientsInRoom.isEmpty()) {
             resetReadyTimer();
             resetTurnTimer();
             resetRoundTimer();
@@ -131,39 +131,39 @@ public class GameRoom extends BaseGameRoom {
     // end lifecycle methods
 
     // send/sync data to ServerUser(s)
-    private void sendTurnStatus(ServerUser client, boolean tookTurn) {
-        playersInRoom.values().removeIf(spInRoom -> {
+    private void sendTurnStatus(ServerThread client, boolean tookTurn) {
+        clientsInRoom.values().removeIf(spInRoom -> {
             boolean failedToSend = !spInRoom.sendTurnStatus(client.getClientId(), client.didTakeTurn());
             if (failedToSend) {
-                removeClient(spInRoom.getServerThread());
+                removeClient(spInRoom);
             }
             return failedToSend;
         });
     }
 
-    private void syncTurnStatus(ServerUser incomingClient) {
-        playersInRoom.values().forEach(serverUser -> {
+    private void syncTurnStatus(ServerThread incomingClient) {
+        clientsInRoom.values().forEach(serverUser -> {
             if (serverUser.getClientId() != incomingClient.getClientId()) {
                 boolean failedToSync = !incomingClient.sendTurnStatus(serverUser.getClientId(),
                         serverUser.didTakeTurn(), true);
                 if (failedToSync) {
                     LoggerUtil.INSTANCE.warning(
                             String.format("Removing disconnected %s from list", serverUser.getDisplayName()));
-                    disconnect(serverUser.getServerThread());
+                    disconnect(serverUser);
                 }
             }
         });
     }
 
-    // end send data to ServerUser(s)
+    // end send data to ServerThread(s)
 
     // misc methods
 
     private void checkAllTookTurn() {
-        int numReady = playersInRoom.values().stream()
+        int numReady = clientsInRoom.values().stream()
                 .filter(sp -> sp.isReady())
                 .toList().size();
-        int numTookTurn = playersInRoom.values().stream()
+        int numTookTurn = clientsInRoom.values().stream()
                 // ensure to verify the isReady part since it's against the original list
                 .filter(sp -> sp.isReady() && sp.didTakeTurn())
                 .toList().size();
@@ -179,16 +179,16 @@ public class GameRoom extends BaseGameRoom {
     /**
      * Example turn action
      * 
-     * @param client
+     * @param currentUser
      */
-    protected void handleTurnAction(ServerThread client, String exampleText) {
+    protected void handleTurnAction(ServerThread currentUser, String exampleText) {
         // check if the client is in the room
         try {
-            checkPlayerInRoom(client);
-            checkCurrentPhase(client, Phase.IN_PROGRESS);
-            ServerUser currentUser = playersInRoom.get(client.getClientId());
+            checkPlayerInRoom(currentUser);
+            checkCurrentPhase(currentUser, Phase.IN_PROGRESS);
+
             if (currentUser.didTakeTurn()) {
-                client.sendMessage(Constants.DEFAULT_CLIENT_ID, "You have already taken your turn this round");
+                currentUser.sendMessage(Constants.DEFAULT_CLIENT_ID, "You have already taken your turn this round");
                 return;
             }
             currentUser.setTookTurn(true);
@@ -196,10 +196,11 @@ public class GameRoom extends BaseGameRoom {
             sendTurnStatus(currentUser, currentUser.didTakeTurn());
             checkAllTookTurn();
         } catch (PlayerNotFoundException e) {
-            client.sendMessage(Constants.DEFAULT_CLIENT_ID, "You must be in a GameRoom to do the ready check");
+            currentUser.sendMessage(Constants.DEFAULT_CLIENT_ID, "You must be in a GameRoom to do the ready check");
             LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);
         } catch (PhaseMismatchException e) {
-            client.sendMessage(Constants.DEFAULT_CLIENT_ID, "You can only take a turn during the IN_PROGRESS phase");
+            currentUser.sendMessage(Constants.DEFAULT_CLIENT_ID,
+                    "You can only take a turn during the IN_PROGRESS phase");
             LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);
         } catch (Exception e) {
             LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);

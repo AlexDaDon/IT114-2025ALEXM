@@ -55,6 +55,10 @@ public class ServerThread extends BaseServerThread {
     }
 
     // Start Send*() Methods
+    public boolean sendTurnStatus(long clientId, boolean didTakeTurn) {
+        return sendTurnStatus(clientId, didTakeTurn, false);
+    }
+
     public boolean sendTurnStatus(long clientId, boolean didTakeTurn, boolean quiet) {
         // NOTE for now using ReadyPayload as it has the necessary properties
         // An actual turn may include other data for your project
@@ -240,6 +244,23 @@ public class ServerThread extends BaseServerThread {
                 LoggerUtil.INSTANCE.warning(TextFX.colorize("Unknown payload type received", Color.RED));
                 break;
         }
+    }
+
+    // limited user data exposer
+    protected boolean isReady() {
+        return this.user.isReady();
+    }
+
+    protected void setReady(boolean isReady) {
+        this.user.setReady(isReady);
+    }
+
+    protected boolean didTakeTurn() {
+        return this.user.didTakeTurn();
+    }
+
+    protected void setTookTurn(boolean tookTurn) {
+        this.user.setTookTurn(tookTurn);
     }
 
     @Override
