@@ -4,6 +4,7 @@ import Project.Common.Constants;
 import Project.Common.LoggerUtil;
 import Project.Common.Phase;
 import Project.Common.TimedEvent;
+import Project.Exceptions.NotReadyException;
 import Project.Exceptions.PhaseMismatchException;
 import Project.Exceptions.PlayerNotFoundException;
 
@@ -88,6 +89,7 @@ public class GameRoom extends BaseGameRoom {
         resetRoundTimer();
         resetTurnStatus();
         round++;
+        relay(null, String.format("Round %d has started", round));
         startRoundTimer();
         LoggerUtil.INSTANCE.info("onRoundStart() end");
     }
@@ -211,7 +213,7 @@ public class GameRoom extends BaseGameRoom {
         try {
             checkPlayerInRoom(currentUser);
             checkCurrentPhase(currentUser, Phase.IN_PROGRESS);
-
+            checkIsReady(currentUser);
             if (currentUser.didTakeTurn()) {
                 currentUser.sendMessage(Constants.DEFAULT_CLIENT_ID, "You have already taken your turn this round");
                 return;
@@ -220,7 +222,12 @@ public class GameRoom extends BaseGameRoom {
             // TODO handle example text possibly or other turn related intention from client
             sendTurnStatus(currentUser, currentUser.didTakeTurn());
             checkAllTookTurn();
-        } catch (PlayerNotFoundException e) {
+        }
+        catch(NotReadyException e){
+            // The check method already informs the currentUser
+            LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);
+        } 
+        catch (PlayerNotFoundException e) {
             currentUser.sendMessage(Constants.DEFAULT_CLIENT_ID, "You must be in a GameRoom to do the ready check");
             LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);
         } catch (PhaseMismatchException e) {
