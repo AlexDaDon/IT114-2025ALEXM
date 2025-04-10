@@ -126,6 +126,7 @@ public class GameRoom extends BaseGameRoom {
     protected void onSessionEnd() {
         LoggerUtil.INSTANCE.info("onSessionEnd() start");
         resetReadyStatus();
+        resetTurnStatus();
         changePhase(Phase.READY);
         LoggerUtil.INSTANCE.info("onSessionEnd() end");
     }
