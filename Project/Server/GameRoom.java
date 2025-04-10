@@ -15,6 +15,7 @@ public class GameRoom extends BaseGameRoom {
     // used for granular turn handling (usually turn-order turns)
     private TimedEvent turnTimer = null;
 
+    private int round = 0;
     public GameRoom(String name) {
         super(name);
     }
@@ -75,6 +76,7 @@ public class GameRoom extends BaseGameRoom {
     protected void onSessionStart() {
         LoggerUtil.INSTANCE.info("onSessionStart() start");
         changePhase(Phase.IN_PROGRESS);
+        round = 0;
         LoggerUtil.INSTANCE.info("onSessionStart() end");
         onRoundStart();
     }
@@ -85,6 +87,7 @@ public class GameRoom extends BaseGameRoom {
         LoggerUtil.INSTANCE.info("onRoundStart() start");
         resetRoundTimer();
         resetTurnStatus();
+        round++;
         startRoundTimer();
         LoggerUtil.INSTANCE.info("onRoundStart() end");
     }
@@ -118,7 +121,12 @@ public class GameRoom extends BaseGameRoom {
         resetRoundTimer(); // reset timer if round ended without the time expiring
 
         LoggerUtil.INSTANCE.info("onRoundEnd() end");
-        onSessionEnd();
+        if (round >= 3) {
+            onSessionEnd();
+        }
+        else{
+            onRoundStart();
+        }
     }
 
     /** {@inheritDoc} */
