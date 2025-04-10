@@ -85,7 +85,6 @@ public class GameRoom extends BaseGameRoom {
         LoggerUtil.INSTANCE.info("onRoundStart() start");
         resetRoundTimer();
         resetTurnStatus();
-        sendResetTurnStatus();
         startRoundTimer();
         LoggerUtil.INSTANCE.info("onRoundStart() end");
     }
@@ -173,7 +172,7 @@ public class GameRoom extends BaseGameRoom {
         clientsInRoom.values().forEach(sp -> {
             sp.setTookTurn(false);
         });
-
+        sendResetTurnStatus();
     }
 
     private void checkAllTookTurn() {
