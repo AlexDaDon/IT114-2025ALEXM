@@ -212,8 +212,8 @@ public enum Client {
             } else if (text.equalsIgnoreCase(Command.READY.command)) {
                 sendReady();
                 wasCommand = true;
-            } else if (text.startsWith(Command.DO_SOMETHING.command)) {
-                text = text.replace(Command.DO_SOMETHING.command, "").trim();
+            } else if (text.startsWith(Command.EXAMPLE_TURN.command)) {
+                text = text.replace(Command.EXAMPLE_TURN.command, "").trim();
 
                 sendDoTurn(text);
                 wasCommand = true;
