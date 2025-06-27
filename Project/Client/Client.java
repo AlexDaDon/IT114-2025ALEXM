@@ -163,11 +163,11 @@ public enum Client {
                 String message = TextFX.colorize("Known clients:\n", Color.CYAN);
                 LoggerUtil.INSTANCE.info(TextFX.colorize("Known clients:", Color.CYAN));
                 message += String.join("\n", knownClients.values().stream()
-                        .map(c -> String.format("%s %s %s", c.getDisplayName(),
+                        .map(c -> String.format("%s %s %s %s", 
+                                c.getDisplayName(),
                                 c.getClientId() == myUser.getClientId() ? " (you)" : "",
                                 c.isReady() ? "[x]" : "[ ]",
-                                c.didTakeTurn() ? "[T]"
-                                        : "[ ]"))
+                                c.didTakeTurn() ? "[T]": "[ ]"))
                         .toList());
                 LoggerUtil.INSTANCE.info(message);
                 wasCommand = true;
