@@ -163,11 +163,11 @@ public enum Client {
                 String message = TextFX.colorize("Known clients:\n", Color.CYAN);
                 LoggerUtil.INSTANCE.info(TextFX.colorize("Known clients:", Color.CYAN));
                 message += String.join("\n", knownClients.values().stream()
-                        .map(c -> String.format("%s %s %s %s", 
+                        .map(c -> String.format("%s %s %s %s",
                                 c.getDisplayName(),
                                 c.getClientId() == myUser.getClientId() ? " (you)" : "",
                                 c.isReady() ? "[x]" : "[ ]",
-                                c.didTakeTurn() ? "[T]": "[ ]"))
+                                c.didTakeTurn() ? "[T]" : "[ ]"))
                         .toList());
                 LoggerUtil.INSTANCE.info(message);
                 wasCommand = true;
@@ -228,7 +228,7 @@ public enum Client {
         // An actual turn may include other data for your project
         ReadyPayload rp = new ReadyPayload();
         rp.setPayloadType(PayloadType.TURN);
-        rp.setReady(true); // <- techically not needed as we'll use the payload type as a trigger
+        rp.setReady(true); // <- technically not needed as we'll use the payload type as a trigger
         rp.setMessage(text);
         sendToServer(rp);
     }
