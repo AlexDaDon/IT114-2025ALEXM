@@ -22,7 +22,7 @@ import Project.Common.TextFX.Color;
  */
 public class ServerThread extends BaseServerThread {
     private Consumer<ServerThread> onInitializationComplete; // callback to inform when this object is ready
-
+    private User user = new User();
     /**
      * A wrapper method so we don't need to keep typing out the long/complex sysout
      * line inside
