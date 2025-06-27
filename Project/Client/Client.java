@@ -224,7 +224,7 @@ public enum Client {
      */
     private void sendReady() throws IOException {
         ReadyPayload rp = new ReadyPayload();
-        rp.setReady(true); // <- techically not needed as we'll use the payload type as a trigger
+        rp.setReady(true); // <- technically not needed as we'll use the payload type as a trigger
         sendToServer(rp);
     }
 
@@ -551,7 +551,7 @@ public enum Client {
                 }
             }
         } catch (IOException ioException) {
-            LoggerUtil.INSTANCE.severe("Error in listentToInput()", ioException);
+            LoggerUtil.INSTANCE.severe("Error in listenToInput()", ioException);
             // ioException.printStackTrace();
         }
         LoggerUtil.INSTANCE.info("listenToInput thread stopped");
