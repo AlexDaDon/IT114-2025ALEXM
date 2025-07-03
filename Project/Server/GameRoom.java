@@ -17,6 +17,7 @@ public class GameRoom extends BaseGameRoom {
     private TimedEvent turnTimer = null;
 
     private int round = 0;
+
     public GameRoom(String name) {
         super(name);
     }
@@ -125,8 +126,7 @@ public class GameRoom extends BaseGameRoom {
         LoggerUtil.INSTANCE.info("onRoundEnd() end");
         if (round >= 3) {
             onSessionEnd();
-        }
-        else{
+        } else {
             onRoundStart();
         }
     }
@@ -142,7 +142,7 @@ public class GameRoom extends BaseGameRoom {
     }
     // end lifecycle methods
 
-    // send/sync data to ServerUser(s)
+    // send/sync data to ServerThread(s)
     private void sendResetTurnStatus() {
         clientsInRoom.values().forEach(spInRoom -> {
             boolean failedToSend = !spInRoom.sendResetTurnStatus();
@@ -222,12 +222,10 @@ public class GameRoom extends BaseGameRoom {
             // TODO handle example text possibly or other turn related intention from client
             sendTurnStatus(currentUser, currentUser.didTakeTurn());
             checkAllTookTurn();
-        }
-        catch(NotReadyException e){
+        } catch (NotReadyException e) {
             // The check method already informs the currentUser
             LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);
-        } 
-        catch (PlayerNotFoundException e) {
+        } catch (PlayerNotFoundException e) {
             currentUser.sendMessage(Constants.DEFAULT_CLIENT_ID, "You must be in a GameRoom to do the ready check");
             LoggerUtil.INSTANCE.severe("handleTurnAction exception", e);
         } catch (PhaseMismatchException e) {
