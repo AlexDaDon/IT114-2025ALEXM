@@ -241,7 +241,8 @@ public enum Client {
      */
     private void sendReady() throws IOException {
         ReadyPayload rp = new ReadyPayload();
-        rp.setReady(true); // <- technically not needed as we'll use the payload type as a trigger
+        // rp.setReady(true); // <- technically not needed as we'll use the payload type
+        // as a trigger
         sendToServer(rp);
     }
 
@@ -439,7 +440,7 @@ public enum Client {
     // Start process*() methods
     private void processResetTurn() {
         knownClients.values().forEach(cp -> cp.setTookTurn(false));
-        System.out.println("Ready status turn for everyone");
+        System.out.println("Turn status reset for everyone");
     }
 
     private void processTurn(Payload payload) {
@@ -509,7 +510,7 @@ public enum Client {
         }
         LoggerUtil.INSTANCE.info(TextFX.colorize("Room Results:", Color.PURPLE));
         LoggerUtil.INSTANCE.info(
-                String.join("\n", rooms));
+                String.join(System.lineSeparator(), rooms));
     }
 
     private void processClientData(Payload payload) {

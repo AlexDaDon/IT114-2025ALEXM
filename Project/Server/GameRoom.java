@@ -179,7 +179,7 @@ public class GameRoom extends BaseGameRoom {
     }
     // end lifecycle methods
 
-    // send/sync data to ServerUser(s)
+    // send/sync data to ServerThread(s)
     private void sendResetTurnStatus() {
         clientsInRoom.values().forEach(spInRoom -> {
             boolean failedToSend = !spInRoom.sendResetTurnStatus();
