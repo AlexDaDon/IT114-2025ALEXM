@@ -163,7 +163,8 @@ public enum Client {
                 String message = TextFX.colorize("Known clients:\n", Color.CYAN);
                 LoggerUtil.INSTANCE.info(TextFX.colorize("Known clients:", Color.CYAN));
                 message += String.join("\n", knownClients.values().stream()
-                        .map(c -> String.format("%s %s %s", c.getDisplayName(),
+                        .map(c -> String.format("%s %s %s",
+                                c.getDisplayName(),
                                 c.getClientId() == myUser.getClientId() ? " (you)" : "",
                                 c.isReady() ? "[x]" : "[ ]"))
                         .toList());
@@ -224,7 +225,8 @@ public enum Client {
      */
     private void sendReady() throws IOException {
         ReadyPayload rp = new ReadyPayload();
-        rp.setReady(true); // <- technically not needed as we'll use the payload type as a trigger
+        // rp.setReady(true); // <- technically not needed as we'll use the payload type
+        // as a trigger
         sendToServer(rp);
     }
 
@@ -457,7 +459,7 @@ public enum Client {
         }
         LoggerUtil.INSTANCE.info(TextFX.colorize("Room Results:", Color.PURPLE));
         LoggerUtil.INSTANCE.info(
-                String.join("\n", rooms));
+                String.join(System.lineSeparator(), rooms));
     }
 
     private void processClientData(Payload payload) {
