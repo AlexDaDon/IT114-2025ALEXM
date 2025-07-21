@@ -89,7 +89,7 @@ public class ChatView extends JPanel implements IMessageEvents, IConnectionEvent
         JTextField textValue = new JTextField();
         input.add(textValue);
         JButton button = new JButton("Send");
-        textValue.addActionListener(_ -> button.doClick()); // Enter key submits
+        textValue.addActionListener(e -> button.doClick()); // Enter key submits
         button.addActionListener(_ -> {
             SwingUtilities.invokeLater(() -> {
                 try {
@@ -209,9 +209,9 @@ public class ChatView extends JPanel implements IMessageEvents, IConnectionEvent
         if (clientId == Constants.DEFAULT_CLIENT_ID) {
             return;
         }
-        String displayName = Client.INSTANCE.getDisplayNameFromId(clientId);
 
         if (!isQuiet) {
+            String displayName = Client.INSTANCE.getDisplayNameFromId(clientId);
             boolean isMe = Client.INSTANCE.isMyClientId(clientId);
             // Example 1: Client generated join/leave message (see Room.java for Example 2)
             String message = String.format("<font color=blue>*%s %s the Room %s*</font>",
