@@ -94,8 +94,7 @@ public class ChatGameView extends JPanel implements IRoomEvents, IPhaseEvent {
 
     @Override
     public void onReceivePhase(Phase phase) {
-        if (phase == Phase.READY) {
-            showGameView();
-        }
+        showGameView();
+
     }
 }
