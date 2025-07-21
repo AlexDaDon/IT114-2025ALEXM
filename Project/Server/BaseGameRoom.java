@@ -124,6 +124,7 @@ public abstract class BaseGameRoom extends Room {
         if (readyTimer != null) {
             readyTimer.cancel();
             readyTimer = null;
+            sendCurrentTime(TimerType.READY, -1);
         }
     }
 
