@@ -87,12 +87,7 @@ public enum Client {
      * @param str
      */
     public void clientSideGameEvent(String str) {
-        events.forEach(event -> {
-            if (event instanceof IMessageEvents) {
-                // Note: using -2 to target GameEventPanel
-                ((IMessageEvents) event).onMessageReceive(Constants.GAME_EVENT_CHANNEL, str);
-            }
-        });
+        passToUICallback(IMessageEvents.class, e -> e.onMessageReceive(Constants.GAME_EVENT_CHANNEL, str));
     }
 
     public boolean isMyClientIdSet() {
@@ -610,11 +605,16 @@ public enum Client {
             String message = String.format("%s %s their turn", cp.getDisplayName(),
                     cp.didTakeTurn() ? "took" : "reset");
             LoggerUtil.INSTANCE.info(message);
-
-            passToUICallback(IMessageEvents.class,
-                    e -> e.onMessageReceive(Constants.GAME_EVENT_CHANNEL,
-                            String.format("%s finished their turn",
-                                    cp.getDisplayName())));
+            // reusable method for client-side feedback
+            clientSideGameEvent(String.format("%s finished their turn",
+                    cp.getDisplayName()));
+            // original
+            /*
+             * passToUICallback(IMessageEvents.class,
+             * e -> e.onMessageReceive(Constants.GAME_EVENT_CHANNEL,
+             * String.format("%s finished their turn",
+             * cp.getDisplayName())));
+             */
         }
 
         passToUICallback(ITurnEvent.class, e -> e.onTookTurn(cp.getClientId(), cp.didTakeTurn()));
@@ -853,6 +853,7 @@ public enum Client {
         }
     }
 
+    @Deprecated
     public static void main(String[] args) {
         Client client = Client.INSTANCE;
         try {
