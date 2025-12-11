@@ -1,5 +1,6 @@
 ## project Rock Paper Scissors___
 
+## ALEX MONTERO
 
 ## Course : IT114-005
 
